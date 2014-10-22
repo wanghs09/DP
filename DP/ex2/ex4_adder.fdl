@@ -1,0 +1,95 @@
+dp half_adder (	in	a	:	ns(1);
+				in	b	:	ns(1);
+				out	s	:	ns(1);
+				out	c	:	ns(1))
+{
+	always
+	{
+		s = a ^ b;
+		c = a & b;		
+	}
+
+}
+
+dp half_adder_2 : half_adder
+
+dp full_adder (	in	a		:	ns(1);
+				in	b		:	ns(1);
+				in	cin		:	ns(1);
+				out	s		:	ns(1);
+				out	cout	:	ns(1))
+{
+	sig s1, c1, c2 : ns(1);
+	
+	use half_adder(a, b, s1, c2);
+	use half_adder_2(s1, cin, s, c1);
+	
+	sfg do_always
+	{
+		cout = c1 | c2;
+	}
+
+}
+
+hardwired full_adder_hw (full_adder) { do_always; }
+
+dp full_adder_2 : full_adder
+dp full_adder_3 : full_adder
+dp full_adder_4 : full_adder
+
+dp four_bits_adder (	in	a		:	ns(4);
+				in	b		:	ns(4);
+				in	cin		:	ns(1);
+				out	s		:	ns(4);
+				out	cout	:	ns(1))
+{
+	sig c1, c2, c3 : ns(1);
+	sig a0, b0, s0 : ns(1);
+
+	sig st0, st1, st2, st3 : ns(1);
+	
+	use full_adder(a[0], b[0], cin, st0, c1);
+	use full_adder_2(a[1], b[1], c1 , st1, c2);
+	use full_adder_3(a[2], b[2], c2 , st2, c3);
+	use full_adder_4(a[3], b[3], c3 , st3, cout);
+	
+	always
+	{
+		s = st3 # st2 # st1 # st0;
+		$display("[cycle = ", $cycle, "] ", a, " + ", b, " = ", s, " (Carry = ", cout, ")");
+		$finish;
+	}
+
+}
+
+dp testbench (	out	a	:	ns(4);
+				out b	:	ns(4);
+		out cin	:	ns(1))
+{
+	sfg do_always
+	{
+		a = 14;
+		b = 4;
+		cin = 0;
+	}
+}
+
+hardwired test_hw (testbench) { do_always; }
+
+dp top
+{		
+	sig a		: ns(4);
+	sig b		: ns(4);
+	sig cin		: ns(1);
+	sig s		: ns(4);
+	sig cout	: ns(1);
+	
+	use testbench(a, b, cin);
+	use four_bits_adder(a, b, cin, s, cout);
+}
+
+system S
+{
+	top;
+}
+

@@ -1,0 +1,93 @@
+dp div_serial (	in	dividend	:	ns(6);
+		in	divisor		:	ns(6);
+		out	quotient	:	ns(6);
+		out	remainder	:	ns(6))
+{
+	reg r_remainder : ns(7);
+	reg r_quotient : ns(6);
+	reg r_dividend : ns(6);
+	reg r_divisor : ns(6);
+	reg count : ns(4);
+
+	reg q : ns(1);
+	sig sum : ns(7);
+	sig operand1 : ns(7);
+	sig operand2 : ns(7);
+	sig cin : ns(1);
+	
+	sfg init
+	{		
+		count = 0;
+		r_remainder = 0 # dividend[5];	
+		r_dividend = dividend[4:0] # 1[0];
+		r_divisor = divisor;
+	}
+
+	sfg operate
+	{
+		count = count + 1;
+		r_dividend = r_dividend[4:0] # q[0];
+		r_remainder = (count < 6) ? (sum[5:0] # r_dividend[5]) : r_remainder;
+	}
+
+	sfg done
+	{
+		$display("[cycle = ", $cycle, "]", dividend, " / ", divisor, " = ", quotient, " (Remainder = ", remainder, ")");	
+		$finish;	
+	}
+
+	always
+	{
+		$display("[cycle = ", $cycle, "]", dividend, " / ", divisor, " = ", quotient, " (Remainder = ", remainder, ")");
+		$display("[cycle = ", $cycle, ", count = ", count, "]", "r_remainder = ", r_remainder, ", r_dividend = ", r_dividend, ", r_divisor = ", r_divisor, " q = ", q, " sum = ", sum, " op1 = ", operand1, " op2 = ", operand2, " cin = ", cin);
+		quotient = r_dividend;
+		remainder = r_remainder[6:1];
+		sum = operand1 + operand2 + cin;
+		q = ~sum[6];
+		operand1 = r_remainder;
+		operand2 = (q == 1) ? (1[0] # ~r_divisor) : ((count > 5) ? (r_divisor # 0[0]) : (0[0] # r_divisor)) ;
+		cin = q;
+	}	
+
+}
+
+fsm div_fsm (div_serial)
+{
+	initial waiting;
+	state operating, end;
+
+	@waiting (init) -> operating;
+	@operating 
+		if (count > 5) then (operate) -> end;
+		else (operate) -> operating;
+	@end 	(done) -> waiting;
+}
+
+dp testbench (	out dividend	:	ns(6);
+		out divisor 	:	ns(6))
+{
+	sfg do_always
+	{
+		dividend = 3;
+		divisor = 5;
+	}
+}
+
+hardwired test_hw (testbench) { do_always; }
+
+dp top
+{		
+	sig dividend	: ns(6);
+	sig divisor	: ns(6);
+	sig quotient	: ns(6);
+	sig remainder	: ns(6);
+	
+	use testbench(dividend, divisor);
+	use div_serial(dividend, divisor, quotient, remainder);
+}
+
+system S
+{
+	top;
+}
+

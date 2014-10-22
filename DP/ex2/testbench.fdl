@@ -1,0 +1,36 @@
+dp example1 (in a_in, b_in, c_in : ns(1);
+					   out result : ns(1))
+{
+	reg result_reg : ns(1);
+
+	sfg run {
+		result_reg = (a_in & b_in) ^ c_in;
+		result = result_reg;
+	  $display("Cycle ", $cycle, ": a_in = ", a_in," b_in = ", b_in," result = ", result);
+	}
+}
+
+hardwired hw_control(example1){run;}
+
+dp testbench( out a_out, b_out, c_out : ns(1))
+{
+	sfg run_tb {
+		a_out = 0b1;
+		b_out = 0b1;
+		c_out = 0b0;
+	}
+}
+
+hardwired hw_testbench(testbench){run_tb;}
+
+dp top()
+{
+	sig a,b,c,d : ns(1);
+	use testbench(a,b,c);
+	use example1(a,b,c,d);
+}
+
+system S 
+{
+	top;
+}

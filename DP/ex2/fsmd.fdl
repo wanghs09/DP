@@ -1,0 +1,49 @@
+dp count(in a_in : ns(10); 
+	out result : ns(10)) 
+{
+	reg a_reg : ns(10);
+
+	sfg load { 
+		a_reg = a_in;
+	}
+
+	sfg work { 
+		a_reg = (a_reg < 999) ? (a_reg + 1) : 0;
+	}
+
+	sfg do_always {
+		result = a_reg;
+		$display($dec, "Cycle ", $cycle, ": a_in = ",a_in, " result = ", result);
+	}
+}
+
+
+fsm ctl_count(count) {
+	initial s0;
+	state s1;
+	@s0 (load,do_always) -> s1;
+	@s1 (work,do_always) -> s1;
+}
+
+dp testbench(out a_in : ns(10))
+{
+	sfg test
+	{
+		a_in=5; //Initial value of the load
+	}
+}
+
+hardwired hw_testbench(testbench){test;}
+
+dp count_sys
+{	
+	sig a_in	: ns(10);
+	sig result	:	ns(10);	
+	
+	use testbench(a_in);
+	use count( a_in, result);
+}
+
+system S {
+  count_sys;
+}

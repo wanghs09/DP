@@ -1,0 +1,77 @@
+dp tl_dp ()
+{
+	
+	reg 	counter: ns(4);
+	reg	previous_state_green: ns(1);	
+	reg 	current_state:ns(2);
+
+	sfg print_info
+	{
+		$display("idle ", counter);
+		
+	}
+
+	sfg print_red
+	{
+		$display("red ", counter);
+		
+	}
+
+	sfg print_amber
+	{
+		$display("amber ", counter);
+		
+	}
+
+	sfg print_green
+	{
+		$display("green ", counter);
+		
+	}	
+	
+	sfg init_counter
+	{
+		counter=0;
+	}
+		
+	sfg increase_counter
+	{
+		counter=counter+1;
+	}
+
+	sfg makeit0
+	{
+		previous_state_green=0;		
+	}
+	sfg makeit1
+	{
+		previous_state_green=1;
+	}
+
+}
+
+fsm tl_fsm (tl_dp)
+{
+	initial start;
+	state red, amber,green;
+	
+	@start (init_counter,print_info)	-> red;
+	@red if(counter==9) then (init_counter,makeit0,print_red) -> amber;
+		else  (increase_counter,print_red) -> red;
+	@amber if (counter<4) then (increase_counter,print_amber) ->amber;
+	else if (previous_state_green==0) then (init_counter,print_amber)-> green;
+	else  (init_counter,print_amber)->red;
+	@green  if(counter==9) then (init_counter,makeit1,print_green) -> amber;
+		else  (increase_counter,print_green) -> green;
+	
+}
+
+dp sys
+{		
+	use tl_dp;
+}
+
+system S
+{
+	sys;
+}
